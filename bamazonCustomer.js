@@ -28,13 +28,30 @@ function displayItems() {
     })
 }
 
-function getProductInfo() {
+// retrieves info on user's selected product for purchase
+function getProductInfo(idChoice, quantityChoice) {
     connection.query("SELECT * FROM products WHERE item_id =" + idChoice, function (err, res) {
         var productInfo = res;
+        var productQuantity = productInfo[0].stock_quantity;
+
+        if (productQuantity > quantityChoice) {
+            startSale(quantityChoice, idChoice, productInfo);
+        } else {
+            console.log("We don't have enough!");
+        }
     });
 }
-// inquirer -- ask user id of product they want to buy, then how many units would you like to buy
-function startShopping(inventory) {
+
+// This function performs the sale, updates the database to reflect sales. 
+function startSale (quantityChoice, idChoice, productInfo) {
+    connection.query("UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?", [quantityChoice, idChoice], function(err, res) {
+        var yourTotal = quantityChoice * productInfo[0].price;  
+        console.log("\nThanks! Your total is $" + yourTotal + ". Have a nice Day!");
+    })
+}
+
+// This function asks the user which item they'd like to purchase, then sotres their selection in a variable for future use .
+function startShopping() {
     inquirer
         .prompt({
             name: "whichOne",
@@ -46,16 +63,15 @@ function startShopping(inventory) {
                 }
                 return false;
             }
+            
         }).then(function (answers) {
             idChoice = answers.whichOne;
-            howMany();
-
+            checkQuantity();
         });
-
 }
 
-
-function howMany() {
+// This function asks for the user's desired quantity for their purchase, then stores their selection in a variable for future use. 
+function checkQuantity() {
     inquirer
         .prompt({
             name: "quantity",
@@ -70,9 +86,8 @@ function howMany() {
         })
         .then(function (answers) {
             quantityChoice = answers.quantity;
-
-
-        })
-};
+            getProductInfo(idChoice, quantityChoice);
+        });
+}
 
 
